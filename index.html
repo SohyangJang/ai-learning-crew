@@ -3,63 +3,90 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f8fafc">
   <title>AI Learning Crew - AI 대화 공유 & 챌린지 대시보드</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- canvas-confetti CDN -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
     body { font-family: 'Pretendard', sans-serif; }
+    button, a, input, select, textarea { touch-action: manipulation; }
+    :focus-visible { outline: 3px solid rgb(79 70 229 / .45); outline-offset: 2px; }
+    .tab-btn[aria-selected="true"] { box-shadow: 0 4px 12px rgb(79 70 229 / .2); }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen pb-20">
+<body class="bg-slate-50 text-slate-800 min-h-screen overflow-x-hidden pb-20">
   <!-- Header -->
-  <header class="border-b border-slate-200 bg-white/90 backdrop-blur sticky top-0 z-50 shadow-sm">
-    <div class="max-w-6xl mx-auto px-4 py-3.5 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
+  <header class="border-b border-slate-200 bg-white">
+    <div class="max-w-6xl mx-auto px-4 py-3.5 flex items-center justify-between gap-3">
+      <div class="flex min-w-0 items-center space-x-3">
         <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-emerald-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
           <i class="fa-solid fa-graduation-cap text-lg"></i>
         </div>
-        <div>
-          <h1 class="text-xl font-extrabold bg-gradient-to-r from-indigo-700 via-purple-700 to-emerald-600 bg-clip-text text-transparent">
+        <div class="min-w-0">
+          <h1 class="truncate text-lg sm:text-xl font-extrabold bg-gradient-to-r from-indigo-700 via-purple-700 to-emerald-600 bg-clip-text text-transparent">
             AI Learning Crew
           </h1>
-          <p class="text-xs text-slate-500 font-medium">생성형 AI 대화 공유 & 챌린지 인증 대시보드</p>
+          <p class="hidden text-xs text-slate-500 font-medium sm:block">생성형 AI 대화 공유 & 챌린지 인증 대시보드</p>
         </div>
       </div>
-      <div class="flex items-center space-x-3">
+      <div class="flex shrink-0 items-center space-x-3">
         <div class="hidden sm:flex items-center space-x-2 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full text-xs">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <span class="text-emerald-700 font-bold">토큰 비용 0원 (링크 기반 인증)</span>
         </div>
-        <button onclick="loadAllData()" class="p-2 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg transition" title="새로고침">
-          <i class="fa-solid fa-rotate"></i>
+        <button type="button" onclick="loadAllData()" class="min-h-11 min-w-11 p-2 hover:bg-slate-100 text-slate-600 hover:text-slate-900 rounded-lg transition-colors" title="새로고침" aria-label="데이터 새로고침">
+          <i class="fa-solid fa-rotate" aria-hidden="true"></i>
         </button>
       </div>
     </div>
 
-    <!-- Navigation Tabs -->
-    <div class="max-w-6xl mx-auto px-4 mt-2">
-      <nav class="flex space-x-2 overflow-x-auto pb-2 scrollbar-none">
-        <button onclick="switchTab('feed')" id="tabBtn-feed" class="tab-btn px-4 py-2.5 rounded-xl font-bold text-sm transition flex items-center gap-2 bg-indigo-600 text-white shadow-md shadow-indigo-600/20">
-          <i class="fa-solid fa-share-nodes"></i> 인증 & AI 공유 피드
-        </button>
-        <button onclick="switchTab('dateSummary')" id="tabBtn-dateSummary" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
-          <i class="fa-solid fa-calendar-days"></i> 날짜별 요약 현황
-        </button>
-        <button onclick="switchTab('members')" id="tabBtn-members" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
-          <i class="fa-solid fa-users"></i> 크루원별 상세 현황 <span id="memberTabBadge" class="text-xs px-1.5 py-0.5 rounded-md bg-slate-200 text-slate-700 font-semibold">0</span>
-        </button>
-      </nav>
-    </div>
+<!-- Navigation Tabs -->
+<div class="max-w-6xl mx-auto px-2 sm:px-4 mt-2">
+  <!-- ★ role="tablist" 속성 추가 ★ -->
+  <nav class="flex gap-1.5 sm:gap-2 pb-2" role="tablist" aria-label="대시보드 메뉴">
+    <!-- 1번 탭 -->
+    <button onclick="switchTab('feed')" id="tabBtn-feed" role="tab" aria-selected="true" aria-controls="tabContent-feed"
+      class="tab-btn flex-1 min-h-[56px] px-1 sm:px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 bg-indigo-600 text-white shadow-md shadow-indigo-600/20 text-center leading-tight">
+      <i class="fa-solid fa-share-nodes text-base"></i>
+      <span>인증 & AI<br class="sm:hidden"> 공유 피드</span>
+    </button>
+
+    <!-- 2번 탭 -->
+    <button onclick="switchTab('dateSummary')" id="tabBtn-dateSummary" role="tab" aria-selected="false" aria-controls="tabContent-dateSummary"
+      class="tab-btn flex-1 min-h-[56px] px-1 sm:px-4 py-2 rounded-xl font-medium text-xs sm:text-sm transition flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 text-center leading-tight">
+      <i class="fa-solid fa-calendar-days text-base"></i>
+      <span>날짜별<br class="sm:hidden"> 요약 현황</span>
+    </button>
+
+    <!-- 3번 탭 -->
+    <button onclick="switchTab('members')" id="tabBtn-members" role="tab" aria-selected="false" aria-controls="tabContent-members"
+      class="tab-btn flex-1 min-h-[56px] px-1 sm:px-4 py-2 rounded-xl font-medium text-xs sm:text-sm transition flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 text-center leading-tight">
+      <i class="fa-solid fa-users text-base"></i>
+      <span class="inline-flex flex-col sm:flex-row items-center gap-1">
+        <span>크루원별<br class="sm:hidden"> 상세 현황</span>
+        <span id="memberTabBadge" class="text-[10px] sm:text-xs px-1.5 py-0.5 rounded-md bg-slate-200 text-slate-700 font-semibold">0</span>
+      </span>
+    </button>
+  </nav>
+</div>
   </header>
 
-  <main class="max-w-6xl mx-auto px-4 mt-6">
+  <main id="main-content" class="w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 mt-4 sm:mt-6">
+    <div id="appStatus" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+    <div id="dataLoadMessage" class="hidden mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800" role="alert"></div>
     <!-- ========================================== -->
     <!-- TAB 1: 인증 & AI 대화 공유 피드 (메인) -->
     <!-- ========================================== -->
-    <div id="tabContent-feed" class="tab-content space-y-7">
+    <div id="tabContent-feed" class="tab-content min-w-0 space-y-7" role="tabpanel" aria-labelledby="tabBtn-feed">
       <!-- Quick Metric Bar -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm">
           <span class="text-xs font-semibold text-slate-500 block mb-1">총 등록 크루원</span>
           <div class="flex items-baseline gap-1.5">
@@ -93,15 +120,15 @@
       <!-- Submission & Verification Form -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <!-- Submission Form -->
-        <section class="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
-          <div class="flex items-center justify-between mb-5 pb-4 border-b border-slate-100">
-            <div>
+        <section class="min-w-0 lg:col-span-7 bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm">
+          <div class="flex flex-col items-start gap-3 mb-5 pb-4 border-b border-slate-100 sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0">
               <h2 class="text-lg font-bold flex items-center gap-2 text-slate-900">
                 <i class="fa-solid fa-paper-plane text-emerald-600"></i> 오늘의 AI 챌린지 인증 제출
               </h2>
               <p class="text-xs text-slate-500 mt-0.5">공유 주소를 붙여넣으면 토큰 소모 없이 즉시 인증됩니다.</p>
             </div>
-            <div class="flex flex-wrap gap-1.5">
+            <div class="flex w-full flex-wrap gap-1.5 sm:w-auto sm:justify-end">
               <button type="button" onclick="fillSampleLink('gemini')" class="text-[11px] px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg transition font-medium">
                 Gemini 예시
               </button>
@@ -116,19 +143,19 @@
 
           <form id="submitForm" onsubmit="handleSubmit(event)" class="space-y-4">
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1.5">인증할 크루원 선택</label>
-              <select id="memberSelect" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-600 focus:bg-white transition text-slate-900">
+              <label for="memberSelect" class="block text-xs font-bold text-slate-700 mb-1.5">인증할 크루원 선택</label>
+              <select id="memberSelect" name="member" autocomplete="off" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-base sm:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 focus:border-indigo-600 focus:bg-white transition-colors text-slate-900">
               </select>
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1.5">오늘의 과제 주제 / 프롬프트 요약</label>
-              <input type="text" id="topicInput" value="Docker 멀티스테이지 빌드로 컨테이너 최적화" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-600 focus:bg-white transition text-slate-900" placeholder="예: Claude와 함께한 SQL 인덱스 최적화 질문" required>
+              <label for="topicInput" class="block text-xs font-bold text-slate-700 mb-1.5">오늘의 과제 주제 / 프롬프트 요약</label>
+              <input type="text" id="topicInput" name="topic" autocomplete="off" value="Docker 멀티스테이지 빌드로 컨테이너 최적화" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-base sm:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 focus:border-indigo-600 focus:bg-white transition-colors text-slate-900" placeholder="예: Claude와 함께한 SQL 인덱스 최적화 질문…" required>
             </div>
 
             <div>
               <div class="flex items-center justify-between mb-1.5">
-                <label class="block text-xs font-bold text-slate-700">생성형 AI 대화 공유 링크 (URL)</label>
+                <label for="shareUrlInput" class="block text-xs font-bold text-slate-700">생성형 AI 대화 공유 링크 (URL)</label>
                 <span id="detectedToolBadge" class="text-[11px] px-2 py-0.5 rounded-md hidden font-semibold border"></span>
               </div>
               <div class="relative">
@@ -138,9 +165,11 @@
                 <input 
                   type="url" 
                   id="shareUrlInput" 
+                  name="shareUrl"
+                  autocomplete="url"
                   oninput="handleUrlInput(this.value)"
-                  class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-indigo-600 focus:bg-white transition text-slate-900 font-mono" 
-                  placeholder="https://share.gemini.google/... 또는 https://chatgpt.com/share/..." 
+                  class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-4 py-2.5 text-base sm:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 focus:border-indigo-600 focus:bg-white transition-colors text-slate-900 font-mono"
+                  placeholder="https://chatgpt.com/share/…"
                   required
                 >
               </div>
@@ -150,11 +179,11 @@
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1.5">한 줄 학습 소감 / 꿀팁 (선택)</label>
-              <textarea id="notesInput" rows="2" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-indigo-600 focus:bg-white transition text-slate-900" placeholder="동료들에게 공유하고 싶은 프롬프트 작성 팁이나 배운 점을 남겨보세요."></textarea>
+              <label for="notesInput" class="block text-xs font-bold text-slate-700 mb-1.5">한 줄 학습 소감 / 꿀팁 (선택)</label>
+              <textarea id="notesInput" name="notes" autocomplete="off" rows="3" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-base sm:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 focus:border-indigo-600 focus:bg-white transition-colors text-slate-900" placeholder="프롬프트 작성 팁이나 배운 점을 남겨보세요…"></textarea>
             </div>
 
-            <button type="submit" id="submitBtn" class="w-full mt-2 py-3 px-6 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-emerald-600 hover:opacity-95 text-white font-bold text-sm shadow-md shadow-indigo-600/20 transition flex items-center justify-center gap-2">
+            <button type="submit" id="submitBtn" class="w-full min-h-12 mt-2 py-3 px-6 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-emerald-600 hover:opacity-95 text-white font-bold text-base sm:text-sm shadow-md shadow-indigo-600/20 transition flex items-center justify-center gap-2">
               <i class="fa-solid fa-circle-check"></i> AI 대화 링크 제출 & 챌린지 인증 완료
             </button>
           </form>
@@ -162,7 +191,7 @@
 
         <!-- Live Result Panel -->
         <section class="lg:col-span-5 flex flex-col">
-          <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex-1 flex flex-col">
+          <div class="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm flex-1 flex flex-col">
             <h2 class="text-lg font-bold flex items-center gap-2 mb-4 pb-4 border-b border-slate-100 text-slate-900">
               <i class="fa-solid fa-sparkles text-emerald-600"></i> 실시간 인증 상태
             </h2>
@@ -178,7 +207,7 @@
       </div>
 
       <!-- Feed / History Section -->
-      <section class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+      <section class="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm">
         <div class="flex items-center justify-between mb-4 pb-4 border-b border-slate-100">
           <div>
             <h2 class="text-lg font-bold flex items-center gap-2 text-slate-900">
@@ -188,7 +217,8 @@
           </div>
           <span id="historyCount" class="text-xs font-semibold text-slate-500"></span>
         </div>
-        <div class="overflow-x-auto">
+        <div id="historyMobileList" class="space-y-3 md:hidden"></div>
+        <div class="hidden overflow-x-auto md:block">
           <table class="w-full text-left text-sm">
             <thead>
               <tr class="text-xs text-slate-500 border-b border-slate-200 bg-slate-50/50">
@@ -207,115 +237,155 @@
       </section>
     </div>
 
-    <!-- ========================================== -->
-    <!-- TAB 2: 날짜별 요약 현황 -->
-    <!-- ========================================== -->
-    <div id="tabContent-dateSummary" class="tab-content hidden space-y-6">
-      <!-- Date Selector & Summary Bar -->
-      <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h2 class="text-lg font-bold flex items-center gap-2 text-slate-900">
-            <i class="fa-solid fa-calendar-check text-indigo-600"></i> 일자별 챌린지 달성 현황
-          </h2>
-          <p class="text-xs text-slate-500 mt-0.5">날짜를 선택하여 해당 날짜의 크루원 달성률과 제출 내역을 조회합니다.</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <button onclick="changeDateFilter(-1)" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs rounded-xl font-bold transition">
-            <i class="fa-solid fa-chevron-left mr-1"></i> 전날
-          </button>
-          <input 
-            type="date" 
-            id="summaryDateInput" 
-            onchange="renderDateSummary(this.value)"
-            class="bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-indigo-600 font-mono"
-          >
-          <button onclick="changeDateFilter(1)" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs rounded-xl font-bold transition">
-            다음날 <i class="fa-solid fa-chevron-right ml-1"></i>
-          </button>
-          <button onclick="setSummaryDateToday()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-xl font-bold transition shadow-sm">
-            오늘
-          </button>
-        </div>
+<!-- ========================================== -->
+<!-- TAB 2: 날짜별 요약 현황 -->
+<!-- ========================================== -->
+    <div id="tabContent-dateSummary" class="tab-content min-w-0 hidden space-y-6" role="tabpanel" aria-labelledby="tabBtn-dateSummary">
+  <!-- Date Selector & Summary Bar -->
+  <div class="bg-white border border-slate-200 rounded-3xl p-4 md:p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div>
+      <h2 class="text-base md:text-lg font-bold flex items-center gap-2 text-slate-900">
+        <i class="fa-solid fa-calendar-check text-indigo-600"></i> 일자별 챌린지 달성 현황
+      </h2>
+      <p class="text-xs text-slate-500 mt-0.5">날짜를 선택하여 해당 날짜의 크루원 달성률과 제출 내역을 조회합니다.</p>
+    </div>
+    <div class="flex items-center gap-1.5 md:gap-2 w-full md:w-auto justify-between md:justify-end">
+      <!-- 전날 버튼 -->
+      <button type="button" onclick="changeDateFilter(-1)" class="min-h-11 px-2.5 md:px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm md:text-xs rounded-xl font-bold transition-colors whitespace-nowrap">
+        <i class="fa-solid fa-chevron-left mr-0.5 md:mr-1"></i> 전날
+      </button>
+      <!-- 날짜 Input -->
+      <input 
+        type="date" 
+        id="summaryDateInput" 
+        name="summaryDate"
+        aria-label="조회할 날짜"
+        onchange="renderDateSummary(this.value)"
+        class="min-h-11 bg-slate-50 border border-slate-300 rounded-xl px-2 md:px-4 py-2 text-xs md:text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 focus:border-indigo-600 font-mono text-center flex-1 md:flex-initial min-w-0"
+      >
+      <!-- 다음날 버튼 -->
+      <button type="button" onclick="changeDateFilter(1)" class="min-h-11 px-2.5 md:px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm md:text-xs rounded-xl font-bold transition-colors whitespace-nowrap">
+        다음날 <i class="fa-solid fa-chevron-right ml-0.5 md:ml-1"></i>
+      </button>
+      <!-- 오늘 버튼 -->
+      <button type="button" onclick="setSummaryDateToday()" class="min-h-11 px-3 md:px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm md:text-xs rounded-xl font-bold transition-colors shadow-sm whitespace-nowrap">
+        오늘
+      </button>
+    </div>
+  </div>
+
+<!-- ⬇️ [신규 추가] 깃허브 잔디 스타일 월간 달력 히트맵 ⬇️ -->
+<div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 my-4">
+  <div class="flex items-center justify-between mb-3">
+    <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+      <i class="fa-solid fa-calendar-days text-indigo-600"></i> 이번 달 챌린지 잔디 (인증률)
+    </span>
+    <!-- 푸른색 단계 범례 -->
+    <div class="flex items-center gap-1 text-[11px] text-slate-500">
+      <span>낮음</span>
+      <span class="w-3 h-3 rounded-sm bg-slate-100 border border-slate-200"></span>
+      <span class="w-3 h-3 rounded-sm bg-blue-200"></span>
+      <span class="w-3 h-3 rounded-sm bg-blue-400"></span>
+      <span class="w-3 h-3 rounded-sm bg-blue-600"></span>
+      <span class="w-3 h-3 rounded-sm bg-blue-800"></span>
+      <span>높음</span>
+    </div>
+  </div>
+
+  <!-- 요일 헤더 -->
+  <div class="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-slate-400 mb-1.5">
+    <span class="text-rose-400">일</span>
+    <span>월</span>
+    <span>화</span>
+    <span>수</span>
+    <span>목</span>
+    <span>금</span>
+    <span class="text-blue-400">토</span>
+  </div>
+
+  <!-- 달력 날짜 그리드 (JS로 동적 생성) -->
+  <div id="calendarHeatmap" class="grid grid-cols-7 gap-1"></div>
+</div>
+<!-- ⬆️ [신규 추가 끝] ⬆️ -->  
+
+  <!-- Date Stats Card -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <div class="bg-white border border-emerald-100 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
+      <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 text-xl">
+        <i class="fa-solid fa-circle-check"></i>
       </div>
-
-      <!-- Date Stats Card -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div class="bg-white border border-emerald-100 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
-          <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 text-xl">
-            <i class="fa-solid fa-circle-check"></i>
-          </div>
-          <div>
-            <span class="text-xs font-semibold text-slate-500 block">인증 완료 (성공)</span>
-            <div class="flex items-baseline gap-2">
-              <span id="dateStatPassed" class="text-2xl font-black text-emerald-600">0</span>
-              <span id="dateStatTotal1" class="text-xs text-slate-400">/ 0명</span>
-            </div>
-          </div>
+      <div>
+        <span class="text-xs font-semibold text-slate-500 block">인증 완료 (성공)</span>
+        <div class="flex items-baseline gap-2">
+          <span id="dateStatPassed" class="text-2xl font-black text-emerald-600">0</span>
+          <span id="dateStatTotal1" class="text-xs text-slate-400">/ 0명</span>
         </div>
-
-        <div class="bg-white border border-rose-100 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
-          <div class="w-12 h-12 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 text-xl">
-            <i class="fa-solid fa-circle-xmark"></i>
-          </div>
-          <div>
-            <span class="text-xs font-semibold text-slate-500 block">미제출 / 패널티 대상</span>
-            <div class="flex items-baseline gap-2">
-              <span id="dateStatFailed" class="text-2xl font-black text-rose-600">0</span>
-              <span id="dateStatTotal2" class="text-xs text-slate-400">/ 0명</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white border border-indigo-100 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
-          <div class="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 text-xl">
-            <i class="fa-solid fa-chart-pie"></i>
-          </div>
-          <div class="flex-1">
-            <div class="flex justify-between items-center mb-1">
-              <span class="text-xs font-semibold text-slate-500">당일 달성률</span>
-              <span id="dateStatPercent" class="text-xs font-bold text-indigo-700">0%</span>
-            </div>
-            <div class="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
-              <div id="dateStatBar" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-500" style="width: 0%"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Date Detail Grid: Passed vs Pending/Failed -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Passed Members List -->
-        <section class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col">
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-            <h3 class="font-bold text-base text-emerald-700 flex items-center gap-2">
-              <i class="fa-solid fa-check-double"></i> 인증 완료 크루원
-            </h3>
-            <span id="datePassedCountBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">0명</span>
-          </div>
-          <div id="datePassedList" class="space-y-3 flex-1 overflow-y-auto max-h-[500px] pr-1">
-            <!-- Rendered dynamically -->
-          </div>
-        </section>
-
-        <!-- Unsubmitted / Failed Members List -->
-        <section class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col">
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-            <h3 class="font-bold text-base text-rose-700 flex items-center gap-2">
-              <i class="fa-solid fa-user-xmark"></i> 미제출 / 패널티 발생 크루원
-            </h3>
-            <span id="dateFailedCountBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-bold">0명</span>
-          </div>
-          <div id="dateFailedList" class="space-y-3 flex-1 overflow-y-auto max-h-[500px] pr-1">
-            <!-- Rendered dynamically -->
-          </div>
-        </section>
       </div>
     </div>
+
+    <div class="bg-white border border-rose-100 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
+      <div class="w-12 h-12 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 text-xl">
+        <i class="fa-solid fa-circle-xmark"></i>
+      </div>
+      <div>
+        <span class="text-xs font-semibold text-slate-500 block">미제출 / 패널티 대상</span>
+        <div class="flex items-baseline gap-2">
+          <span id="dateStatFailed" class="text-2xl font-black text-rose-600">0</span>
+          <span id="dateStatTotal2" class="text-xs text-slate-400">/ 0명</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white border border-indigo-100 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
+      <div class="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 text-xl">
+        <i class="fa-solid fa-chart-pie"></i>
+      </div>
+      <div class="flex-1">
+        <div class="flex justify-between items-center mb-1">
+          <span class="text-xs font-semibold text-slate-500">당일 달성률</span>
+          <span id="dateStatPercent" class="text-xs font-bold text-indigo-700">0%</span>
+        </div>
+        <div class="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
+          <div id="dateStatBar" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-[width] duration-500" style="width: 0%" role="progressbar" aria-label="일일 챌린지 달성률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Date Detail Grid: Passed vs Pending/Failed -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Passed Members List -->
+    <section class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 class="font-bold text-base text-emerald-700 flex items-center gap-2">
+          <i class="fa-solid fa-check-double"></i> 인증 완료 크루원
+        </h3>
+        <span id="datePassedCountBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">0명</span>
+      </div>
+      <div id="datePassedList" class="space-y-3 flex-1 overflow-y-auto max-h-[500px] pr-1">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- Unsubmitted / Failed Members List -->
+    <section class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 class="font-bold text-base text-rose-700 flex items-center gap-2">
+          <i class="fa-solid fa-user-xmark"></i> 미제출 / 패널티 발생 크루원
+        </h3>
+        <span id="dateFailedCountBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-bold">0명</span>
+      </div>
+      <div id="dateFailedList" class="space-y-3 flex-1 overflow-y-auto max-h-[500px] pr-1">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+  </div>
+</div>
 
     <!-- ========================================== -->
     <!-- TAB 3: 크루원별 상세 현황 (20명) -->
     <!-- ========================================== -->
-    <div id="tabContent-members" class="tab-content hidden space-y-6">
+    <div id="tabContent-members" class="tab-content min-w-0 hidden space-y-6" role="tabpanel" aria-labelledby="tabBtn-members">
       <!-- Search & Filters -->
       <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -333,16 +403,19 @@
             <input 
               type="text" 
               id="memberSearchInput" 
+              name="memberSearch"
+              autocomplete="off"
+              aria-label="이름 또는 부서로 크루원 검색"
               oninput="renderFilteredMembers()"
-              placeholder="이름 또는 이메일 검색..." 
-              class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-8 pr-4 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white"
+              placeholder="이름 또는 부서 검색…" 
+              class="min-h-11 w-full bg-slate-50 border border-slate-300 rounded-xl pl-8 pr-4 py-2 text-xs text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 focus:border-indigo-600 focus:bg-white"
             >
           </div>
           <!-- Filter Buttons -->
           <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-            <button onclick="setMemberFilter('all')" id="filterBtn-all" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white transition shadow-sm">전체</button>
-            <button onclick="setMemberFilter('healthy')" id="filterBtn-healthy" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 transition">무결점</button>
-            <button onclick="setMemberFilter('penalized')" id="filterBtn-penalized" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 transition">패널티</button>
+            <button type="button" onclick="setMemberFilter('all')" id="filterBtn-all" aria-pressed="true" class="min-h-11 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white transition-colors shadow-sm">전체</button>
+            <button type="button" onclick="setMemberFilter('healthy')" id="filterBtn-healthy" aria-pressed="false" class="min-h-11 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 hover:text-slate-900 transition-colors">무결점</button>
+            <button type="button" onclick="setMemberFilter('penalized')" id="filterBtn-penalized" aria-pressed="false" class="min-h-11 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 hover:text-slate-900 transition-colors">패널티</button>
           </div>
         </div>
       </div>
@@ -355,8 +428,8 @@
   </main>
 
   <!-- Member Submission History Modal -->
-  <div id="memberHistoryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+  <div id="memberHistoryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="historyModalMemberName" aria-describedby="historyModalCount">
+    <div class="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col overscroll-contain" tabindex="-1">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center">
@@ -364,11 +437,11 @@
           </div>
           <div>
             <h3 id="historyModalMemberName" class="font-bold text-slate-900 text-base">크루원 이름</h3>
-            <p id="historyModalMemberEmail" class="text-xs text-slate-500">이메일</p>
+            <p id="historyModalMemberEmail" class="text-xs text-slate-500">부서</p>
           </div>
         </div>
-        <button onclick="closeMemberHistoryModal()" class="p-2 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition">
-          <i class="fa-solid fa-xmark text-lg"></i>
+        <button type="button" onclick="closeMemberHistoryModal()" class="min-h-11 min-w-11 p-2 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition-colors" aria-label="제출 기록 모달 닫기">
+          <i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
         </button>
       </div>
 
@@ -390,14 +463,14 @@
   </div>
 
   <!-- Admin Edit Challenge Fee & Balance Modal -->
-  <div id="adminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white border border-slate-200 rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+  <div id="adminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle" aria-describedby="adminModalCurrent">
+    <div class="bg-white border border-slate-200 rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 overscroll-contain" tabindex="-1">
       <div class="flex items-center gap-3 text-indigo-600">
         <div class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center">
           <i class="fa-solid fa-coins text-lg"></i>
         </div>
         <div>
-          <h3 class="font-bold text-slate-900 text-base">챌린지 비용 수정</h3>
+          <h3 id="adminModalTitle" class="font-bold text-slate-900 text-base">챌린지 비용 수정</h3>
           <p class="text-xs text-slate-500">관리자 전용 보증금 & 패널티 설정</p>
         </div>
       </div>
@@ -407,12 +480,14 @@
       </div>
       
       <div>
-        <label class="block text-xs font-bold text-slate-700 mb-1">변경할 챌린지 비용 잔액 (원)</label>
+        <label for="adminBalanceInput" class="block text-xs font-bold text-slate-700 mb-1">변경할 챌린지 비용 잔액 (원)</label>
         <div class="relative">
           <input 
             type="number" 
             id="adminBalanceInput" 
-            class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white font-mono font-bold" 
+            name="balance"
+            inputmode="numeric"
+            class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 focus:border-indigo-600 focus:bg-white font-mono font-bold"
             step="1000"
             min="0"
           >
@@ -427,26 +502,31 @@
       </div>
 
       <div>
-        <label class="block text-xs font-bold text-slate-700 mb-1">패널티 횟수 설정</label>
+        <label for="adminFailCountInput" class="block text-xs font-bold text-slate-700 mb-1">패널티 횟수 설정</label>
         <input 
           type="number" 
           id="adminFailCountInput" 
-          class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white font-mono" 
+          name="failCount"
+          inputmode="numeric"
+          class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 focus:border-indigo-600 focus:bg-white font-mono"
           min="0"
         >
       </div>
 
       <div>
-        <label class="block text-xs font-bold text-slate-700 mb-1">관리자 PIN 번호</label>
+        <label for="adminPinInput" class="block text-xs font-bold text-slate-700 mb-1">관리자 PIN 번호</label>
         <input 
           type="password" 
           id="adminPinInput" 
-          class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm text-center tracking-widest text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white font-mono" 
+          name="adminPin"
+          inputmode="numeric"
+          autocomplete="current-password"
+          class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm text-center tracking-widest text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 focus:border-indigo-600 focus:bg-white font-mono"
           placeholder="••••"
           maxlength="8"
           onkeydown="if(event.key==='Enter') confirmBalanceUpdate()"
         >
-        <p class="text-[11px] text-slate-400 mt-1">기본 PIN: <span class="font-mono text-slate-600 font-bold">1234</span></p>
+    <p class="text-[11px] text-slate-400 mt-1">PIN문의: <span class="font-mono text-slate-600 font-bold">2기 장소향</span></p>
       </div>
       <div class="flex gap-2 pt-2">
         <button onclick="closeAdminModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
@@ -460,17 +540,49 @@
   </div>
 
   <script>
-    const CONFIG = {
-      SUPABASE_URL: 'https://barjhjjvoxvfqgrwqopg.supabase.co',
-      ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhcmpoamp2b3h2ZnFncndxb3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MTEwMTgsImV4cCI6MjEwMzk4NzAxOH0.0sfkSVwLMu5hvg2XctNOdqxkbBUahIVUwle-bvuyaig',
-      ADMIN_PIN: '1234'
-    };
+// 1. CONFIG에서 ADMIN_PIN을 완전히 제거
+const CONFIG = {
+  SUPABASE_URL: 'https://barjhjjvoxvfqgrwqopg.supabase.co',
+  ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhcmpoamp2b3h2ZnFncndxb3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MTEwMTgsImV4cCI6MjEwMzk4NzAxOH0.0sfkSVwLMu5hvg2XctNOdqxkbBUahIVUwle-bvuyaig'
+};
+
+// 2. Supabase 클라이언트 생성
+const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.ANON_KEY);
+
+// 3. 백엔드 Edge Function을 호출하여 PIN 검증하는 함수
+async function verifyAdminPin(userInputPin) {
+  const { data, error } = await supabaseClient.functions.invoke('verify-pin', {
+    body: { pin: userInputPin }
+  });
+
+  if (error || !data?.success) {
+    alert(data?.message || 'PIN 번호가 올바르지 않습니다.');
+    return false;
+  }
+
+  return true; // PIN 검증 성공
+}
 
     let currentTab = 'feed';
     let members = [];
     let allChallenges = [];
     let pendingResetMemberId = null;
     let memberFilter = 'all';
+    let lastFocusedElement = null;
+
+    function announce(message) {
+      document.getElementById('appStatus').textContent = message;
+    }
+
+    function showDataLoadError(message) {
+      const notice = document.getElementById('dataLoadMessage');
+      notice.textContent = message;
+      notice.classList.remove('hidden');
+    }
+
+    function clearDataLoadError() {
+      document.getElementById('dataLoadMessage').classList.add('hidden');
+    }
 
     const AI_PLATFORMS = [
       {
@@ -557,10 +669,12 @@
         const btn = document.getElementById(`tabBtn-${t}`);
         if (t === tabName) {
           content.classList.remove('hidden');
-          btn.className = 'tab-btn px-4 py-2.5 rounded-xl font-bold text-sm transition flex items-center gap-2 bg-indigo-600 text-white shadow-md shadow-indigo-600/20';
+          btn.setAttribute('aria-selected', 'true');
+          btn.className = 'tab-btn min-h-11 shrink-0 px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 bg-indigo-600 text-white shadow-md shadow-indigo-600/20';
         } else {
           content.classList.add('hidden');
-          btn.className = 'tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100';
+          btn.setAttribute('aria-selected', 'false');
+          btn.className = 'tab-btn min-h-11 shrink-0 px-4 py-2.5 rounded-xl font-medium text-sm transition-colors flex items-center gap-2 text-slate-700 hover:text-slate-900 hover:bg-slate-100';
         }
       });
 
@@ -574,6 +688,16 @@
         renderFilteredMembers();
       }
     }
+
+    document.querySelector('[role="tablist"]').addEventListener('keydown', (event) => {
+      const tabs = [...document.querySelectorAll('[role="tab"]')];
+      const currentIndex = tabs.indexOf(document.activeElement);
+      if (currentIndex < 0 || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const nextIndex = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (currentIndex + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+      tabs[nextIndex].focus();
+      tabs[nextIndex].click();
+    });
 
     // ==========================================
     // Data Fetching
@@ -593,30 +717,47 @@
         updateTopKpis();
       } catch (err) {
         console.error('Failed to load members', err);
+        showDataLoadError('크루원 정보를 불러오지 못했습니다. 네트워크를 확인한 뒤 다시 시도해 주세요.');
       }
     }
 
     async function loadAllChallenges() {
-      try {
-        const res = await fetch(CONFIG.SUPABASE_URL + '/rest/v1/daily_challenges?select=*,members(name,email)&order=submitted_at.desc.nullslast&limit=100', {
-          headers: {
-            'apikey': CONFIG.ANON_KEY,
-            'Authorization': 'Bearer ' + CONFIG.ANON_KEY
-          }
-        });
-        allChallenges = await res.json();
-        renderFeedHistory();
-        updateTopKpis();
-        if (currentTab === 'dateSummary') {
-          renderDateSummary(document.getElementById('summaryDateInput').value || getLocalTodayStr());
-        }
-      } catch (err) {
-        console.error('Failed to load challenges', err);
+  try {
+    // 1. email -> department 로 변경
+    const res = await fetch(CONFIG.SUPABASE_URL + '/rest/v1/daily_challenges?select=*,members(name,department)&order=submitted_at.desc.nullslast&limit=100', {
+      headers: {
+        'apikey': CONFIG.ANON_KEY,
+        'Authorization': 'Bearer ' + CONFIG.ANON_KEY
       }
+    });
+
+    const data = await res.json();
+
+    // 2. 응답이 정상 배열인지 확인 후 저장 (에러 객체 방어)
+    if (Array.isArray(data)) {
+      allChallenges = data;
+    } else {
+      console.error('Supabase API Error:', data);
+      allChallenges = []; // 에러 시 빈 배열로 초기화하여 filter() 터짐 방지
     }
 
+    renderFeedHistory();
+    updateTopKpis();
+    if (currentTab === 'dateSummary') {
+      renderDateSummary(document.getElementById('summaryDateInput').value || getLocalTodayStr());
+    }
+  } catch (err) {
+    console.error('Failed to load challenges', err);
+    showDataLoadError('인증 기록을 불러오지 못했습니다. 잠시 후 새로고침해 주세요.');
+    allChallenges = []; // 네트워크 에러 시에도 빈 배열 유지
+  }
+}
+
     async function loadAllData() {
+      announce('데이터를 불러오는 중…');
+      clearDataLoadError();
       await Promise.all([loadMembers(), loadAllChallenges()]);
+      announce('대시보드 데이터를 업데이트했습니다.');
     }
 
     function updateTopKpis() {
@@ -643,16 +784,18 @@
     function renderMemberSelect() {
       const select = document.getElementById('memberSelect');
       select.innerHTML = members.map(m => `
-        <option value="${m.id}">${m.name} (${m.email}) - 잔액: ${m.balance.toLocaleString()}원</option>
+        <option value="${m.id}">${m.name} (${m.department}) - 잔액: ${m.balance.toLocaleString()}원</option>
       `).join('');
     }
 
     function renderFeedHistory() {
       const tbody = document.getElementById('historyTableBody');
+      const mobileList = document.getElementById('historyMobileList');
       document.getElementById('historyCount').innerText = '최근 ' + allChallenges.length + '건 등록';
 
       if (!allChallenges.length) {
         tbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-slate-400 text-xs font-medium">등록된 AI 대화 링크가 없습니다.</td></tr>';
+        mobileList.innerHTML = '<div class="rounded-2xl bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">등록된 AI 대화 링크가 없습니다.</div>';
         return;
       }
 
@@ -695,6 +838,25 @@
           </tr>
         `;
       }).join('');
+
+      mobileList.innerHTML = allChallenges.map(h => {
+        const isPass = h.result === 'O';
+        const memberName = h.members ? h.members.name : '크루원';
+        const dateStr = h.submitted_at ? new Date(h.submitted_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : (h.challenge_date || '-');
+        const rawContent = h.submission_content || '';
+        const urlMatch = rawContent.match(/https?:\/\/[^\s\n]+/);
+        const shareUrl = urlMatch ? urlMatch[0] : '';
+        const tool = detectAITool(shareUrl);
+        const statusClass = isPass ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200';
+        const link = shareUrl ? `<a href="${shareUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center rounded-xl border border-indigo-200 bg-indigo-50 px-3 text-sm font-bold text-indigo-700">대화 보기 <i class="fa-solid fa-arrow-up-right-from-square ml-1" aria-hidden="true"></i></a>` : '<span class="text-sm text-slate-500">공유 링크 없음</span>';
+        return `<article class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 shadow-sm">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0"><p class="truncate text-base font-bold text-slate-900">${memberName}</p><p class="mt-0.5 truncate text-sm text-slate-600">${h.topic || '주제 없음'}</p></div>
+            <span class="shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold ${statusClass}">${isPass ? '인증 완료' : '확인 필요'}</span>
+          </div>
+          <div class="mt-3 flex items-center justify-between gap-3 border-t border-slate-200 pt-3"><span class="text-xs text-slate-500">${tool ? tool.name + ' · ' : ''}${dateStr}</span>${link}</div>
+        </article>`;
+      }).join('');
     }
 
     function fillSampleLink(platform) {
@@ -733,6 +895,7 @@
 
       const tool = detectAITool(shareUrl);
       if (!tool) {
+        announce('유효한 생성형 AI 공유 링크 형식이 아닙니다. 링크 입력란을 확인해 주세요.');
         alert('⚠️ 유효한 생성형 AI 공유 링크 형식이 아닙니다!\n\n지원 형식 예시:\n- Gemini: https://share.gemini.google/... 또는 https://gemini.google.com/share/...\n- ChatGPT: https://chatgpt.com/share/...\n- Claude: https://claude.ai/share/...\n- Perplexity: https://www.perplexity.ai/search/...\n- Copilot: https://copilot.microsoft.com/sl/...\n- v0.dev: https://v0.dev/chat/...\n- Poe: https://poe.com/s/...');
         document.getElementById('shareUrlInput').focus();
         return;
@@ -817,7 +980,9 @@
         document.getElementById('detectedToolBadge').classList.add('hidden');
 
         await loadAllData();
+        announce('챌린지 인증이 완료되었습니다. 결과를 확인해 주세요.');
       } catch (err) {
+        announce('챌린지 인증 중 오류가 발생했습니다. 결과 패널을 확인해 주세요.');
         resultContainer.innerHTML = `
           <div class="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm font-semibold">
             <i class="fa-solid fa-triangle-exclamation mr-1"></i> 오류 발생: ${err.message}
@@ -838,15 +1003,29 @@
       renderDateSummary(today);
     }
 
-    function changeDateFilter(daysDelta) {
-      const input = document.getElementById('summaryDateInput');
-      const currentVal = input.value || getLocalTodayStr();
-      const curDate = new Date(currentVal + 'T00:00:00');
-      curDate.setDate(curDate.getDate() + daysDelta);
-      const newStr = curDate.toISOString().split('T')[0];
-      input.value = newStr;
-      renderDateSummary(newStr);
-    }
+function changeDateFilter(daysDelta) {
+  const input = document.getElementById('summaryDateInput');
+  const currentVal = input.value || getLocalTodayStr();
+  
+  // 'YYYY-MM-DD'를 연, 월, 일 숫자로 분리해 시차(UTC) 문제 방지
+  const [year, month, day] = currentVal.split('-').map(Number);
+  
+  // 로컬 시간 기준으로 날짜 객체 생성 (월은 0부터 시작하므로 -1)
+  const curDate = new Date(year, month - 1, day);
+  
+  // 날짜 이동 (+1 또는 -1)
+  curDate.setDate(curDate.getDate() + daysDelta);
+  
+  // YYYY-MM-DD 포맷으로 다시 변환
+  const y = curDate.getFullYear();
+  const m = String(curDate.getMonth() + 1).padStart(2, '0');
+  const d = String(curDate.getDate()).padStart(2, '0');
+  const newStr = `${y}-${m}-${d}`;
+  
+  // 화면 및 데이터 갱신
+  input.value = newStr;
+  renderDateSummary(newStr);
+}
 
     function renderDateSummary(targetDate) {
       if (!targetDate) targetDate = getLocalTodayStr();
@@ -878,6 +1057,7 @@
       document.getElementById('dateStatTotal2').innerText = `/ ${totalMembers}명`;
       document.getElementById('dateStatPercent').innerText = percent + '%';
       document.getElementById('dateStatBar').style.width = percent + '%';
+      document.getElementById('dateStatBar').setAttribute('aria-valuenow', percent);
       document.getElementById('datePassedCountBadge').innerText = passedCount + '명';
       document.getElementById('dateFailedCountBadge').innerText = failedCount + '명';
 
@@ -917,7 +1097,7 @@
                   </div>
                   <div>
                     <h4 class="font-bold text-sm text-slate-900">${member.name}</h4>
-                    <p class="text-[11px] text-slate-500">${member.email}</p>
+                    <p class="text-[11px] text-slate-500">${member.department}</p>
                   </div>
                 </div>
                 ${toolBadge}
@@ -950,7 +1130,7 @@
                 </div>
                 <div>
                   <h4 class="font-bold text-sm text-slate-900">${member.name}</h4>
-                  <p class="text-[11px] text-slate-500">${member.email}</p>
+                  <p class="text-[11px] text-slate-500">${member.department}</p>
                 </div>
               </div>
               <div class="text-right">
@@ -972,10 +1152,11 @@
       memberFilter = filter;
       ['all', 'healthy', 'penalized'].forEach(f => {
         const btn = document.getElementById(`filterBtn-${f}`);
+        btn.setAttribute('aria-pressed', String(f === filter));
         if (f === filter) {
-          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white transition shadow-sm';
+          btn.className = 'min-h-11 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white transition-colors shadow-sm';
         } else {
-          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 transition';
+          btn.className = 'min-h-11 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 hover:text-slate-900 transition-colors';
         }
       });
       renderFilteredMembers();
@@ -994,7 +1175,7 @@
       }
 
       if (searchKeyword) {
-        list = list.filter(m => m.name.toLowerCase().includes(searchKeyword) || m.email.toLowerCase().includes(searchKeyword));
+        list = list.filter(m => m.name.toLowerCase().includes(searchKeyword) || m.department.toLowerCase().includes(searchKeyword));
       }
 
       if (!list.length) {
@@ -1015,7 +1196,7 @@
                   <h3 class="font-bold text-base text-slate-900 group-hover:text-indigo-600 transition flex items-center gap-1.5">
                     ${m.name}
                   </h3>
-                  <p class="text-xs text-slate-500">${m.email}</p>
+                  <p class="text-xs text-slate-500">${m.department}</p>
                 </div>
                 <span class="px-2.5 py-1 text-xs rounded-full font-bold ${
                   m.fail_count === 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
@@ -1059,7 +1240,7 @@
       if (!member) return;
 
       document.getElementById('historyModalMemberName').innerText = member.name;
-      document.getElementById('historyModalMemberEmail').innerText = member.email;
+      document.getElementById('historyModalMemberEmail').innerText = member.department;
 
       const memberChallenges = allChallenges.filter(c => c.member_id === memberId);
       document.getElementById('historyModalCount').innerText = `총 ${memberChallenges.length}건`;
@@ -1108,17 +1289,22 @@
         }).join('');
       }
 
-      document.getElementById('memberHistoryModal').classList.remove('hidden');
+      lastFocusedElement = document.activeElement;
+      const modal = document.getElementById('memberHistoryModal');
+      modal.classList.remove('hidden');
+      modal.querySelector('button').focus();
     }
 
     function closeMemberHistoryModal() {
       document.getElementById('memberHistoryModal').classList.add('hidden');
+      lastFocusedElement?.focus();
     }
 
     // ==========================================
     // Admin Edit Challenge Fee & Balance
     // ==========================================
     function openAdminModal(memberId, memberName, currentBalance, currentFailCount) {
+      lastFocusedElement = document.activeElement;
       pendingResetMemberId = memberId;
       document.getElementById('adminModalTarget').innerText = `${memberName} 님의 챌린지 비용 설정`;
       document.getElementById('adminModalCurrent').innerText = `현재 잔액: ${currentBalance ? currentBalance.toLocaleString() : 0}원 / 패널티 ${currentFailCount || 0}회`;
@@ -1142,11 +1328,37 @@
     function closeAdminModal() {
       document.getElementById('adminModal').classList.add('hidden');
       pendingResetMemberId = null;
+      lastFocusedElement?.focus();
     }
+
+    document.addEventListener('keydown', (event) => {
+      const openModal = ['memberHistoryModal', 'adminModal']
+        .map(id => document.getElementById(id))
+        .find(modal => !modal.classList.contains('hidden'));
+      if (!openModal) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        openModal.id === 'memberHistoryModal' ? closeMemberHistoryModal() : closeAdminModal();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = [...openModal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+        .filter(element => !element.disabled);
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
 
     async function confirmBalanceUpdate() {
       const pin = document.getElementById('adminPinInput').value;
-      if (pin !== CONFIG.ADMIN_PIN) {
+      if (!pin) {
         alert('❌ 관리자 PIN 번호가 일치하지 않습니다.');
         document.getElementById('adminPinInput').value = '';
         document.getElementById('adminPinInput').focus();
@@ -1164,23 +1376,20 @@
 
       const memberId = pendingResetMemberId;
       const member = members.find(m => m.id === memberId);
-      closeAdminModal();
 
       try {
-        const res = await fetch(CONFIG.SUPABASE_URL + '/rest/v1/members?id=eq.' + memberId, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': CONFIG.ANON_KEY,
-            'Authorization': 'Bearer ' + CONFIG.ANON_KEY
-          },
-          body: JSON.stringify({ 
-            balance: newBalance, 
-            fail_count: newFailCount,
-            updated_at: new Date().toISOString()
-          })
+        const { data, error } = await supabaseClient.functions.invoke('admin-action', {
+          body: {
+            pin,
+            member_id: memberId,
+            balance: newBalance,
+            fail_count: newFailCount
+          }
         });
-        if (!res.ok) throw new Error('서버 응답 오류');
+        if (error || !data?.success) {
+          throw new Error(data?.error || error?.message || '서버 응답 오류');
+        }
+        closeAdminModal();
         alert(`✅ ${member ? member.name : '크루원'} 님의 챌린지 비용이 ${newBalance.toLocaleString()}원(패널티 ${newFailCount}회)으로 수정되었습니다.`);
         await loadAllData();
       } catch (err) {
@@ -1190,6 +1399,144 @@
 
     // Initial Load
     loadAllData();
+
+
+// 푸른색 계열 깃허브 잔디 히트맵 생성 함수
+function renderCalendarHeatmap(year, month, challengeData = {}) {
+  const container = document.getElementById('calendarHeatmap');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  const firstDay = new Date(year, month - 1, 1).getDay(); // 해당 월 1일의 요일
+  const lastDate = new Date(year, month, 0).getDate();    // 해당 월의 총 일수
+
+  // 1일 시작 전 빈 칸 채우기
+  for (let i = 0; i < firstDay; i++) {
+    const emptyCell = document.createElement('div');
+    emptyCell.className = 'h-9 rounded-lg bg-transparent';
+    container.appendChild(emptyCell);
+  }
+
+  // 날짜 셀 생성
+  for (let date = 1; date <= lastDate; date++) {
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+    const rate = challengeData[dateStr] || 0; // 예: 85 (85%)
+
+    // 인증률에 따른 푸른색 단계 구분 (0%, ~25%, ~50%, ~75%, 100%)
+    let colorClass = 'bg-slate-100 text-slate-400 border border-slate-200'; // 0%
+    if (rate > 0 && rate <= 25) {
+      colorClass = 'bg-blue-200 text-blue-800';
+    } else if (rate > 25 && rate <= 50) {
+      colorClass = 'bg-blue-400 text-white';
+    } else if (rate > 50 && rate <= 75) {
+      colorClass = 'bg-blue-600 text-white';
+    } else if (rate > 75) {
+      colorClass = 'bg-blue-800 text-white font-bold';
+    }
+
+    const cell = document.createElement('div');
+    // ⬇️ 수정된 셀 생성 클래스 (높이를 대폭 축소)
+    cell.className = `h-9 rounded-lg flex items-center justify-center text-[11px] cursor-pointer transition hover:scale-105 shadow-sm ${colorClass}`;
+    cell.title = `${dateStr}: 인증률 ${rate}%`;
+    cell.innerHTML = `
+      <span>${date}</span>
+    `;
+
+    // 날짜 클릭 시 해당 일자 조회 연동
+    cell.onclick = () => {
+      const dateInput = document.querySelector('input[type="date"]');
+      if (dateInput) {
+        dateInput.value = dateStr;
+        // 필요 시 해당 날짜 데이터 로드 함수 호출
+      }
+    };
+
+    container.appendChild(cell);
+  }
+}
+
+// 테스트용 임시 호출 (Supabase 연동 시 날짜별 % 객체를 전달)
+document.addEventListener('DOMContentLoaded', () => {
+  const sampleData = {
+    '2026-09-01': 10,
+    '2026-09-02': 30,
+    '2026-09-03': 60,
+    '2026-09-04': 90,
+    '2026-09-08': 45,
+    '2026-09-10': 80 // 오늘
+  };
+
+  renderCalendarHeatmap(2026, 9, sampleData);
+});
+
   </script>
+
+  <script>
+  function handleSubmit(event) {
+  event.preventDefault();
+
+  // 1. 폭죽(Confetti) 효과 실행
+  triggerConfetti();
+
+  // 2. 박수 소리 재생 (선택 사항)
+  playClappingSound();
+
+  // 3. 버튼 아이콘 박수 애니메이션 (FontAwesome 아이콘 전환)
+  animateSubmitButton();
+
+  // 기존 제출 로직 진행 (예: API 호출 등)
+}
+
+// 폭죽 연출 함수
+function triggerConfetti() {
+  // 양쪽에서 화려하게 터지는 효과
+  if (typeof confetti !== 'function') {
+    console.error('canvas-confetti 라이브러리가 로드되지 않았습니다.');
+    return;
+  }
+  const count = 200;
+  const defaults = { origin: { y: 0.7 } };
+
+  function fire(particleRatio, opts) {
+    confetti({
+      ...defaults,
+      ...opts,
+      particleCount: Math.floor(count * particleRatio)
+    });
+  }
+
+  fire(0.25, { spread: 26, startVelocity: 55 });
+  fire(0.2, { spread: 60 });
+  fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+  fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+  fire(0.1, { spread: 120, startVelocity: 45 });
+}
+
+// 박수 소리 재생 함수
+function playClappingSound() {
+  // 사용 가능한 박수 효과음 MP3 URL (필요 시 보유한 오디오 파일 경로로 변경)
+  const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3');
+  audio.volume = 0.5;
+  audio.play().catch(err => console.log('자동 재생 제한:', err));
+}
+
+// 버튼 내부 아이콘 및 텍스트 변경 애니메이션
+function animateSubmitButton() {
+  const submitBtn = document.getElementById('submitBtn');
+  if (!submitBtn) return;
+
+  // 기존 HTML 백업 후 박수 치는 아이콘으로 변경
+  const originalContent = submitBtn.innerHTML;
+  submitBtn.innerHTML = `<i class="fa-solid fa-hands-clapping animate-bounce"></i> 인증 성공! 축하합니다!`;
+  submitBtn.disabled = true;
+
+  // 2.5초 후 원래 상태로 복구
+  setTimeout(() => {
+    submitBtn.innerHTML = originalContent;
+    submitBtn.disabled = false;
+  }, 2500);
+}
+</script>
 </body>
 </html>
