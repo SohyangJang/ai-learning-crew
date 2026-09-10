@@ -935,6 +935,12 @@ async function verifyAdminPin(userInputPin) {
           const errText = await res.text();
           throw new Error('데이터베이스 저장 실패: ' + errText);
         }
+        // ==========================================
+        // 🎯 [여기!] DB 저장 성공 후 이벤트 애니메이션 실행
+        // ==========================================
+        if (typeof triggerConfetti === 'function') triggerConfetti();
+        if (typeof playClappingSound === 'function') playClappingSound();
+        if (typeof animateSubmitButton === 'function') animateSubmitButton();
 
         const member = members.find(m => m.id === memberId);
 
@@ -989,8 +995,8 @@ async function verifyAdminPin(userInputPin) {
           </div>
         `;
       } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> AI 대화 링크 제출 & 챌린지 인증 완료';
+        // 성공 시에는 animateSubmitButton()에서 2.5초 후 복구하므로 
+        // finally에서는 버튼 조작 코드를 제거합니다!
       }
     }
 
@@ -1473,21 +1479,6 @@ document.addEventListener('DOMContentLoaded', () => {
   </script>
 
   <script>
-  function handleSubmit(event) {
-  event.preventDefault();
-
-  // 1. 폭죽(Confetti) 효과 실행
-  triggerConfetti();
-
-  // 2. 박수 소리 재생 (선택 사항)
-  playClappingSound();
-
-  // 3. 버튼 아이콘 박수 애니메이션 (FontAwesome 아이콘 전환)
-  animateSubmitButton();
-
-  // 기존 제출 로직 진행 (예: API 호출 등)
-}
-
 // 폭죽 연출 함수
 function triggerConfetti() {
   // 양쪽에서 화려하게 터지는 효과
@@ -1526,15 +1517,14 @@ function animateSubmitButton() {
   const submitBtn = document.getElementById('submitBtn');
   if (!submitBtn) return;
 
-  // 기존 HTML 백업 후 박수 치는 아이콘으로 변경
-  const originalContent = submitBtn.innerHTML;
+  // 1. 축하 메시지로 버튼 변경
   submitBtn.innerHTML = `<i class="fa-solid fa-hands-clapping animate-bounce"></i> 인증 성공! 축하합니다!`;
   submitBtn.disabled = true;
 
-  // 2.5초 후 원래 상태로 복구
+  // 2. 2.5초 후 원래 제출 버튼 상태로 복구
   setTimeout(() => {
-    submitBtn.innerHTML = originalContent;
     submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> AI 대화 링크 제출 & 챌린지 인증 완료';
   }, 2500);
 }
 </script>
