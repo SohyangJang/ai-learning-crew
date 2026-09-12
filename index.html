@@ -274,25 +274,33 @@
     </div>
   </div>
 
-<!-- ⬇️ [신규 추가] 깃허브 잔디 스타일 월간 달력 히트맵 ⬇️ -->
+<!-- ⬇️ [수정] 깃허브 잔디 스타일 월간 달력 히트맵 ⬇️ -->
 <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 my-4">
-  <div class="flex items-center justify-between mb-3">
-    <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+  <!-- 상단 헤더: 제목과 범례를 좌우로 배치 -->
+  <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+    <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5 whitespace-nowrap">
       <i class="fa-solid fa-calendar-days text-indigo-600"></i> 이번 달 챌린지 잔디 (인증률)
     </span>
-    <!-- 푸른색 단계 범례 -->
-    <div class="flex items-center gap-1 text-[11px] text-slate-500">
-      <span>낮음</span>
-      <span class="w-3 h-3 rounded-sm bg-slate-100 border border-slate-200"></span>
-      <span class="w-3 h-3 rounded-sm bg-blue-200"></span>
-      <span class="w-3 h-3 rounded-sm bg-blue-400"></span>
-      <span class="w-3 h-3 rounded-sm bg-blue-600"></span>
-      <span class="w-3 h-3 rounded-sm bg-blue-800"></span>
-      <span>높음</span>
+    
+    <!-- 인디고 10단계 초밀착 범례 (layout 붕괴 방지) -->
+    <div class="flex items-center gap-0.5 text-[10px] text-slate-500 shrink-0">
+      <span class="mr-0.5">낮음</span>
+      <span class="w-2 h-2 rounded-[2px] bg-slate-100 border border-slate-200" title="0%"></span>
+      <span class="w-2 h-2 rounded-[2px] bg-indigo-50" title="~10%"></span>
+      <span class="w-2 h-2 rounded-[2px] bg-indigo-100" title="~20%"></span>
+      <span class="w-2 h-2 rounded-[2px] bg-indigo-200" title="~30%"></span>
+      <span class="w-2 h-2 rounded-[2px] bg-indigo-300" title="~40%"></span>
+      <span class="w-2 h-2 rounded-[2px] bg-indigo-400" title="~50%"></span>
+      <span class="w-2 h-2 rounded-[2px] bg-indigo-500" title="~60%"></span>
+      <span class="w-2 h-2 rounded-[2px] bg-indigo-600" title="~70%"></span>
+      <span class="w-2 h-2 rounded-[2px] bg-indigo-700" title="~80%"></span>
+      <span class="w-2 h-2 rounded-[2px] bg-indigo-800" title="~90%"></span>
+      <span class="w-2 h-2 rounded-[2px] bg-indigo-950" title="~100%"></span>
+      <span class="ml-0.5">높음</span>
     </div>
   </div>
 
-  <!-- 요일 헤더 -->
+  <!-- 요일 헤더 (독립된 줄로 배치) -->
   <div class="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-slate-400 mb-1.5">
     <span class="text-rose-400">일</span>
     <span>월</span>
@@ -303,10 +311,10 @@
     <span class="text-blue-400">토</span>
   </div>
 
-  <!-- 달력 날짜 그리드 (JS로 동적 생성) -->
+  <!-- 달력 날짜 그리드 (JS 동적 생성) -->
   <div id="calendarHeatmap" class="grid grid-cols-7 gap-1"></div>
 </div>
-<!-- ⬆️ [신규 추가 끝] ⬆️ -->  
+<!-- ⬆️ [수정 끝] ⬆️ -->  
 
   <!-- Date Stats Card -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -1407,7 +1415,7 @@ function changeDateFilter(daysDelta) {
     loadAllData();
 
 
-// 푸른색 계열 깃허브 잔디 히트맵 생성 함수
+// 인디고 계열 깃허브 잔디 히트맵 생성 함수
 function renderCalendarHeatmap(year, month, challengeData = {}) {
   const container = document.getElementById('calendarHeatmap');
   if (!container) return;
@@ -1429,51 +1437,97 @@ function renderCalendarHeatmap(year, month, challengeData = {}) {
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
     const rate = challengeData[dateStr] || 0; // 예: 85 (85%)
 
-    // 인증률에 따른 푸른색 단계 구분 (0%, ~25%, ~50%, ~75%, 100%)
+    // 인증률에 따른 인디고(바이올렛) 10단계 구분
     let colorClass = 'bg-slate-100 text-slate-400 border border-slate-200'; // 0%
-    if (rate > 0 && rate <= 25) {
-      colorClass = 'bg-blue-200 text-blue-800';
-    } else if (rate > 25 && rate <= 50) {
-      colorClass = 'bg-blue-400 text-white';
-    } else if (rate > 50 && rate <= 75) {
-      colorClass = 'bg-blue-600 text-white';
-    } else if (rate > 75) {
-      colorClass = 'bg-blue-800 text-white font-bold';
+
+    if (rate > 0 && rate <= 10) {
+      colorClass = 'bg-indigo-50 text-indigo-600';
+    } else if (rate > 10 && rate <= 20) {
+      colorClass = 'bg-indigo-100 text-indigo-700';
+    } else if (rate > 20 && rate <= 30) {
+      colorClass = 'bg-indigo-200 text-indigo-800';
+    } else if (rate > 30 && rate <= 40) {
+      colorClass = 'bg-indigo-300 text-indigo-900';
+    } else if (rate > 40 && rate <= 50) {
+      colorClass = 'bg-indigo-400 text-white';
+    } else if (rate > 50 && rate <= 60) {
+      colorClass = 'bg-indigo-500 text-white';
+    } else if (rate > 60 && rate <= 70) {
+      colorClass = 'bg-indigo-600 text-white'; // 상단 메인 버튼 컬러
+    } else if (rate > 70 && rate <= 80) {
+      colorClass = 'bg-indigo-700 text-white';
+    } else if (rate > 80 && rate <= 90) {
+      colorClass = 'bg-indigo-800 text-white';
+    } else if (rate > 90) {
+      colorClass = 'bg-indigo-950 text-white font-bold'; // 100% 달성 시 짙은 톤
     }
 
     const cell = document.createElement('div');
-    // ⬇️ 수정된 셀 생성 클래스 (높이를 대폭 축소)
     cell.className = `h-9 rounded-lg flex items-center justify-center text-[11px] cursor-pointer transition hover:scale-105 shadow-sm ${colorClass}`;
     cell.title = `${dateStr}: 인증률 ${rate}%`;
-    cell.innerHTML = `
-      <span>${date}</span>
-    `;
+    cell.innerHTML = `<span>${date}</span>`;
 
-    // 날짜 클릭 시 해당 일자 조회 연동
+    // ⬇️ [수정된 클릭 이벤트] 하단 renderDateSummary 함수 호출 연동
     cell.onclick = () => {
-      const dateInput = document.querySelector('input[type="date"]');
+      const dateInput = document.getElementById('summaryDateInput');
       if (dateInput) {
         dateInput.value = dateStr;
-        // 필요 시 해당 날짜 데이터 로드 함수 호출
+      }
+      // 하단 일자별 현황 rendering 함수 직접 호출
+      if (typeof renderDateSummary === 'function') {
+        renderDateSummary(dateStr);
       }
     };
 
     container.appendChild(cell);
   }
 }
+// ⭕ 새로 제공해 드린 실제 연동 코드로 교체합니다.
+// ⭕ 이 코드로 새로 붙여넣으세요.
+function loadMonthlyHeatmap(year, month) {
+  if (typeof allChallenges === 'undefined' || typeof members === 'undefined') {
+    renderCalendarHeatmap(year, month, {});
+    return;
+  }
 
-// 테스트용 임시 호출 (Supabase 연동 시 날짜별 % 객체를 전달)
+  const totalMembers = members.length;
+  if (totalMembers === 0) {
+    renderCalendarHeatmap(year, month, {});
+    return;
+  }
+
+  const monthlyData = {};
+  const monthPrefix = `${year}-${String(month).padStart(2, '0')}`;
+
+  // allChallenges 메모리 배열에서 해당 월의 인증 성공('O') 인원 카운트
+  allChallenges.forEach(c => {
+    if (c.challenge_date && c.challenge_date.startsWith(monthPrefix) && c.result === 'O') {
+      const dateStr = c.challenge_date;
+      monthlyData[dateStr] = (monthlyData[dateStr] || 0) + 1;
+    }
+  });
+
+  // 달성률(%) 계산
+  const heatmapPercentData = {};
+  Object.keys(monthlyData).forEach(dateStr => {
+    const passedCount = monthlyData[dateStr];
+    const percent = Math.round((passedCount / totalMembers) * 100);
+    heatmapPercentData[dateStr] = percent;
+  });
+
+  renderCalendarHeatmap(year, month, heatmapPercentData);
+}
+
+// 데이터 로드 후 실행
 document.addEventListener('DOMContentLoaded', () => {
-  const sampleData = {
-    '2026-09-01': 10,
-    '2026-09-02': 30,
-    '2026-09-03': 60,
-    '2026-09-04': 90,
-    '2026-09-08': 45,
-    '2026-09-10': 80 // 오늘
-  };
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1;
 
-  renderCalendarHeatmap(2026, 9, sampleData);
+  // 전체 데이터(allChallenges, members)가 메모리에 불러와진 후 잔디 렌더링
+  setTimeout(() => {
+    loadMonthlyHeatmap(currentYear, currentMonth);
+  }, 300);
 });
 
   </script>
